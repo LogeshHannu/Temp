@@ -1,8 +1,10 @@
 name: Enforce PR Approval Rules
 
 on:
-  pull_request_review:
-    types: [submitted]
+  pull_request:
+    branches:
+      - develop
+    types: [opened, synchronize, reopened]
 
 jobs:
   check-approval:
