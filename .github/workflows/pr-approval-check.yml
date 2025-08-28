@@ -1,0 +1,53 @@
+name: Enforce PR Approval Rules
+
+on:
+  pull_request:
+    types: [opened, edited, reopened, synchronize, ready_for_review]
+    branches:
+      - develop
+
+jobs:
+  validate-approvals:
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: read
+      contents: read
+    steps:
+      - name: Check PR Approval Rules
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const pr = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.payload.pull_request.number
+            });
+
+            const reviews = await github.rest.pulls.listReviews({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.payload.pull_request.number
+            });
+
+            const approvals = reviews.data.filter(r => r.state === 'APPROVED');
+            const approvers = approvals.map(r => r.user.login);
+
+            const prAuthor = pr.data.user.login;
+            const requiredApprover = 'LogeshHannu'; // 👈 Replace with GitHub username of x
+            const soleTeamMember = 'logeshhannur-bit';      // 👈 Replace with username of the only other team member
+
+            let valid = false;
+
+            if (prAuthor === requiredApprover) {
+              // PR opened by x — must be approved by the sole team member
+              valid = approvers.includes(soleTeamMember);
+            } else if (prAuthor === soleTeamMember) {
+              // PR opened by team member — must be approved only by x
+              valid = approvers.length === 1 && approvers[0] === requiredApprover;
+            }
+
+            if (!valid) {
+              core.setFailed('❌ Invalid PR approval. Approval rules not met.');
+            } else {
+              console.log('✅ PR approval is valid.');
+            }
