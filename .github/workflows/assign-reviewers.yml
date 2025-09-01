@@ -1,0 +1,46 @@
+name: Assign Reviewers Based on PR Author
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+
+jobs:
+  assign-reviewers:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Assign reviewers based on PR author
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const pr = context.payload.pull_request;
+            const author = pr.user.login;
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const pr_number = pr.number;
+
+            // Replace these with actual GitHub usernames
+            const X = 'LogeshHannu';
+            const Y = 'logeshhannur-bit';
+            const Z = 'Shreerajaa';
+
+            let reviewers = [];
+
+            if (author === X) {
+              reviewers = [Y];
+            } else if (author === Y || author === Z) {
+              reviewers = [X];
+            } else {
+              // Optionally handle other users (e.g. assign X)
+              reviewers = [X];
+            }
+
+            // Assign reviewers
+            await github.rest.pulls.requestReviewers({
+              owner,
+              repo,
+              pull_number: pr_number,
+              reviewers,
+            });
+
+            console.log(`Assigned reviewers [${reviewers}] to PR #${pr_number} opened by ${author}`);
